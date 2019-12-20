@@ -18,9 +18,21 @@
     <ClCompile Include="main.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ThreadFuncs.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Semaphores.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Header.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadFuncs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Semaphores.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

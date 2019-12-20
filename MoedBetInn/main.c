@@ -4,10 +4,9 @@
    Description:
 */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <windows.h>
+
 #include "Header.h"
+#include "ThreadFuncs.h"
 
 
 
@@ -21,12 +20,17 @@ int main(int argc, char *argv[]) {
 	HANDLE countMutex = CreateMutex(NULL, FALSE, "countMutex");
 	HANDLE logFileMutex = CreateMutex(NULL, FALSE, "logFileMutex");
 	HANDLE barrierSemaphore = CreateSemaphore(NULL, 0, MAX_NUMBER_OF_GUESTS, "barrierSemaphore");
+	HANDLE guest_thread_handles[MAX_NUMBER_OF_GUESTS];
+	int guest_thread_ids[MAX_NUMBER_OF_GUESTS];
+
+	HANDLE semaphoreHandles[MAX_ROOMS];
 	FILE *rooms_fp = NULL;
 	FILE *names_fp = NULL;
 	guest *guests_array[MAX_NUMBER_OF_GUESTS];
 	room *rooms_array[MAX_ROOMS];
 	int room_index = 0;
 	int names_index = 0;
+	int day_counter = 0;
 	//char path[] = argv[1] + rooms.txt
 	char *rooms_path;
 	char *names_path;
@@ -55,7 +59,7 @@ int main(int argc, char *argv[]) {
 
 	//Get rooms from file
 	int file_error;
-	file_error = fopen_s(&fp, rooms_path, "r");
+	file_error = fopen_s(&rooms_fp, rooms_path, "r");
 	if (file_error) {
 		printf("error opening file in path %s", rooms_path);
 	}
@@ -63,16 +67,27 @@ int main(int argc, char *argv[]) {
 	while (feof(rooms_fp) == 0) {
 		///////////////reset line
 		fgets(line, MAX_LINE_LEN, rooms_fp);
-		RemoveNewLine(&line);
+		RemoveNewLine(line);
 		CreateRoom_UpdateArray(line, rooms_array, room_index);
-		/* check that the array is updated with the correct room */
-		printf("%s %d %d\n", rooms_array[room_index]->name, rooms_array[room_index]->price_for_night, rooms_array[room_index]->max_guests);
 		room_index++;	
 	}
-	getchar();///???????
+	CreateRoomSemaphores(semaphoreHandles, rooms_array, room_index); 
+
+	//The following is just an example to check how open semaphore works. We maybe don't need the semaphore handles array
+
+	//HANDLE semHan = OpenSemaphore(SYNCHRONIZE, FALSE, "RoomA");
+	//int waitcode = WaitForSingleObject(semHan, 5000);
+	//printf("\nreturned wait code in 1: %d\n", waitcode);
+	//waitcode = WaitForSingleObject(semHan, 5000);
+	//printf("returned wait code in 2: %d\n", waitcode);
+	//waitcode = WaitForSingleObject(semHan, 5000);
+	//printf("returned wait code in 3: %d\n", waitcode);
+	//waitcode = WaitForSingleObject(semHan, 5000);
+	//printf("returned wait code in 4: %d\n", waitcode);
+
 
 	//Get names from file
-	file_error = fopen_s(&fp, names_path, "r");
+	file_error = fopen_s(&names_fp, names_path, "r");
 	if (file_error) {
 		printf("error opening file in path %s", names_path);
 	}
@@ -81,12 +96,29 @@ int main(int argc, char *argv[]) {
 		/////reset line
 		fgets(line, MAX_LINE_LEN, names_fp);
 		RemoveNewLine(&line);
-		CreateGuests_UpdateArray(line, names_array, names_index);
+		CreateGuests_UpdateArray(line, guests_array, names_index);
 		names_index++;
+	}
+	   	
+	for (int i = 0; i < names_index; i++) {  /* names_index will hold the actual number of guests*/
+		/* find room for guest i*/
+		FindRoom_UpdateGuest(guests_array[i], rooms_array, room_index);  /* room index holds the number of rooms (4 in this case) */
+
+		guest_thread_handles[i] = NULL;
+		guest_thread_handles[i] = CreateThreadSimple(GuestThread, (guests_array[i]), &(guest_thread_ids[i]));
+		if (guest_thread_handles[i] == NULL)
+		{
+			printf("Couldn't create thread, error code %d\n", GetLastError());
+		}
+	}
+
+	int waitcode = WaitForMultipleObjects(names_index, guest_thread_handles, TRUE, INFINITE);
+	if (waitcode == 0) {
+		printf("OK\n");
 	}
 
 
-	
+
 }
 
 void CreateRoom_UpdateArray(char str[], room *room_array[], int index) {
@@ -122,19 +154,20 @@ void CreateRoom_UpdateArray(char str[], room *room_array[], int index) {
 	
 }
 
-void CreateGuestsUpdateArray(char str[], guest* names_array[], int index) {
+void CreateGuests_UpdateArray(char str[], guest* names_array[], int index) {
 	char delim[2] = " ";
 	char* name;
-	char* nigths;
+	char* nights;
 	int nights_i;
 
 	name = strtok(str, delim);
-	nights = strtok(str, delim);
+	nights = strtok(NULL, delim);
 	nights_i = atoi(nights);
 	
 	UpdateArrayNames(names_array, name, nights_i, index);
 
 }
+
 void RemoveNewLine(char* str) {
 	int len = strlen(str);
 	if (str[len - 1] == '\n') {
@@ -163,7 +196,21 @@ void UpdateArrayNames(guest *names_array[], char name[], int nights, int index) 
 		/* error handle*/
 		exit;
 	}
-	n_ptr->nigths = nights;
+	n_ptr->money = nights;
 	strcpy_s(n_ptr->name, ROOM_GUEST_NAME_LEN, name);
 	names_array[index] = n_ptr;
+}
+
+FindRoom_UpdateGuest(guest *guest_to_check, room *room_array[], int num_of_rooms) {
+	int sum = guest_to_check->money;
+	int i = 0;
+
+	for (i; i < num_of_rooms; i++) {
+		if (sum % (room_array[i]->price_for_night) == 0) {  /* 46 % 23 == 0 for example*/
+			guest_to_check->num_of_nights = (sum / room_array[i]->price_for_night);
+			strcpy_s(guest_to_check->suitable_room, ROOM_GUEST_NAME_LEN, room_array[i]->name);
+			break;
+		}
+	}
+
 }
