@@ -1,5 +1,5 @@
-/* Authors: Rotem Hecht 311143044
-			Ariel Felberg 308425974
+/* Authors: Ariel Felberg 308425974
+			Rotem Hecht   311143044
    Project: ISP Exercise 3
    Description:
 */
@@ -28,6 +28,7 @@ int main(int argc, char *argv[]) {
 	FILE *names_fp = NULL;
 	guest *guests_array[MAX_NUMBER_OF_GUESTS];
 	room *rooms_array[MAX_ROOMS];
+	thread_param_struct* thread_param_array[MAX_NUMBER_OF_GUESTS];
 	int room_index = 0;
 	int names_index = 0;
 	int day_counter = 0;
@@ -97,13 +98,14 @@ int main(int argc, char *argv[]) {
 		fgets(line, MAX_LINE_LEN, names_fp);
 		RemoveNewLine(&line);
 		CreateGuests_UpdateArray(line, guests_array, names_index);
+		CreateThreadParams(thread_param_array, guests_array, names_index);
 		names_index++;
 	}
 	   	
 	for (int i = 0; i < names_index; i++) {  /* names_index will hold the actual number of guests*/
 		/* find room for guest i*/
 		FindRoom_UpdateGuest(guests_array[i], rooms_array, room_index);  /* room index holds the number of rooms (4 in this case) */
-
+		*guests_array[i])
 		guest_thread_handles[i] = NULL;
 		guest_thread_handles[i] = CreateThreadSimple(GuestThread, (guests_array[i]), &(guest_thread_ids[i]));
 		if (guest_thread_handles[i] == NULL)
@@ -201,7 +203,7 @@ void UpdateArrayNames(guest *names_array[], char name[], int nights, int index) 
 	names_array[index] = n_ptr;
 }
 
-FindRoom_UpdateGuest(guest *guest_to_check, room *room_array[], int num_of_rooms) {
+void FindRoom_UpdateGuest(guest *guest_to_check, room *room_array[], int num_of_rooms) {
 	int sum = guest_to_check->money;
 	int i = 0;
 
@@ -213,4 +215,8 @@ FindRoom_UpdateGuest(guest *guest_to_check, room *room_array[], int num_of_rooms
 		}
 	}
 
+}
+
+void CreateThreadParams(thread_param_struct* thread_param_array[], guest* guests_array[], int names_index) {
+	thread_param_array[names_index]->guest = guests_array[names_index];///pointer equal pointer??
 }
