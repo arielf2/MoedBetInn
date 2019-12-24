@@ -30,7 +30,8 @@ typedef struct _guest
 
 typedef struct _thread_param_struct
 {
-	guest guest;
+	guest *guest;
+
 	int *day;
 	int *counter;
 
@@ -41,4 +42,5 @@ void CreateGuests_UpdateArray(char str[], guest* names_array[], int index);
 void RemoveNewLine(char* str);
 void UpdateArrayRooms(room *room_array[], char room_name[], int max_guests, int price, int index);
 void UpdateArrayNames(guest *names_array[], char name[], int nights, int index);
-FindRoom_UpdateGuest(guest *guest_to_check, room *room_array[], int num_of_rooms);
+void FindRoom_UpdateGuest(guest *guest_to_check, room *room_array[], int num_of_rooms);
+void CreateThreadParams(thread_param_struct* thread_param_array[], guest* guests_array[], int names_index, int* day, int* counter);

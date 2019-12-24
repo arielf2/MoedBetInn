@@ -7,10 +7,7 @@
 
 #include "Header.h"
 #include "ThreadFuncs.h"
-
-
-
-
+#include "Semaphores.h"
 
 
 
@@ -96,18 +93,21 @@ int main(int argc, char *argv[]) {
 	while (feof(names_fp) == 0) {
 		/////reset line
 		fgets(line, MAX_LINE_LEN, names_fp);
-		RemoveNewLine(&line);
+		RemoveNewLine(line);
 		CreateGuests_UpdateArray(line, guests_array, names_index);
-		CreateThreadParams(thread_param_array, guests_array, names_index);
+		// CreateThreadParams(thread_param_array, guests_array, names_index); // moved this line to the for loop below
 		names_index++;
 	}
-	   	
+	int day = 1;
+	int counter = 0;
 	for (int i = 0; i < names_index; i++) {  /* names_index will hold the actual number of guests*/
 		/* find room for guest i*/
 		FindRoom_UpdateGuest(guests_array[i], rooms_array, room_index);  /* room index holds the number of rooms (4 in this case) */
-		*guests_array[i])
+		//*guests_array[i])
+		CreateThreadParams(thread_param_array, guests_array, i, &day, &counter);
 		guest_thread_handles[i] = NULL;
-		guest_thread_handles[i] = CreateThreadSimple(GuestThread, (guests_array[i]), &(guest_thread_ids[i]));
+
+		guest_thread_handles[i] = CreateThreadSimple(GuestThread, (thread_param_array[i]), &(guest_thread_ids[i]));
 		if (guest_thread_handles[i] == NULL)
 		{
 			printf("Couldn't create thread, error code %d\n", GetLastError());
@@ -183,7 +183,7 @@ void UpdateArrayRooms(room *room_array[], char room_name[], int max_guests, int 
 	if (NULL == r_ptr) {
 		printf("Memory allocation error");
 		/* error handle*/
-		exit;
+		exit(1);
 	}
 	r_ptr->max_guests = max_guests;
 	r_ptr->price_for_night = price;
@@ -192,11 +192,11 @@ void UpdateArrayRooms(room *room_array[], char room_name[], int max_guests, int 
 }
 
 void UpdateArrayNames(guest *names_array[], char name[], int nights, int index) {
-	guest *n_ptr = (room *)malloc(sizeof(guest));
+	guest *n_ptr = (guest *)malloc(sizeof(guest));
 	if (NULL == n_ptr) {
 		printf("Memory allocation error");
 		/* error handle*/
-		exit;
+		exit(1);
 	}
 	n_ptr->money = nights;
 	strcpy_s(n_ptr->name, ROOM_GUEST_NAME_LEN, name);
@@ -217,6 +217,16 @@ void FindRoom_UpdateGuest(guest *guest_to_check, room *room_array[], int num_of_
 
 }
 
-void CreateThreadParams(thread_param_struct* thread_param_array[], guest* guests_array[], int names_index) {
-	thread_param_array[names_index]->guest = guests_array[names_index];///pointer equal pointer??
+
+void CreateThreadParams(thread_param_struct* thread_param_array[], guest* guests_array[], int names_index, int *day, int *counter) {
+	thread_param_struct *s_ptr = (thread_param_struct *)malloc(sizeof(thread_param_struct));
+	if (NULL == s_ptr) {
+		printf("Memory allocation error");
+		/* error handle*/
+		exit(1);
+	}
+	s_ptr->guest = guests_array[names_index];
+	s_ptr->day = day;
+	s_ptr->counter = counter;
+	thread_param_array[names_index] = s_ptr;
 }
