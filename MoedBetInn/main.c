@@ -21,88 +21,38 @@ int main(int argc, char *argv[]) {
 	int guest_thread_ids[MAX_NUMBER_OF_GUESTS];
 
 	HANDLE semaphoreHandles[MAX_ROOMS];
-	FILE *rooms_fp = NULL;
-	FILE *names_fp = NULL;
 	guest *guests_array[MAX_NUMBER_OF_GUESTS];
 	room *rooms_array[MAX_ROOMS];
 	thread_param_struct* thread_param_array[MAX_NUMBER_OF_GUESTS];
-	int room_index = 0;
-	int names_index = 0;
+	int num_of_guests = 0;
+	int num_of_rooms = 0;
 	int day_counter = 0;
+
 	//char path[] = argv[1] + rooms.txt
-	char *rooms_path;
-	char *names_path;
+	char *rooms_path = NULL;
+	char *names_path = NULL;
 	char line[MAX_LINE_LEN] = "";
-
-	//create rooms file path
 	int rooms_names_len = strlen(argv[1]) + ROOMS_NAMES_FILE_NAME;
-	rooms_path = (char *)malloc(rooms_names_len);
-	if (rooms_path == NULL) {
-		printf("Memory allocation error");
-		/* error handle*/
-		exit(1);
-	}
-	strcpy_s(rooms_path, rooms_names_len, argv[1]);
-	strcat_s(rooms_path, rooms_names_len, "\\rooms.txt");
+	
+	// 	allocate memory for full paths of input files, and copy the path to rooms_path/names_path variables
+	AllocateMemory_AssignFilename(&rooms_path, argv[1], rooms_names_len, "\\rooms.txt");
+	AllocateMemory_AssignFilename(&names_path, argv[1], rooms_names_len, "\\names.txt");
 
-	//create names file path
-	names_path = (char *)malloc(rooms_names_len);
-	if (names_path == NULL) {
-		printf("Memory allocation error");
-		/* error handle*/
-		exit(1);
-	}
-	strcpy_s(names_path, rooms_names_len, argv[1]);
-	strcat_s(names_path, rooms_names_len, "\\names.txt");
+	//Get rooms from input file (this will update rooms_array)
+	num_of_rooms = GetRoomsFromFile(rooms_path, rooms_array);
+	free(rooms_path); // the filename is no longer needed, free
 
-	//Get rooms from file
-	int file_error;
-	file_error = fopen_s(&rooms_fp, rooms_path, "r");
-	if (file_error) {
-		printf("error opening file in path %s", rooms_path);
-	}
+	//Get guests from input file (this will update guests_array)
+	num_of_guests = GetNamesFromFile(names_path, guests_array);
+	free(names_path); //the filename is no longer needed, free
 
-	while (feof(rooms_fp) == 0) {
-		///////////////reset line
-		fgets(line, MAX_LINE_LEN, rooms_fp);
-		RemoveNewLine(line);
-		CreateRoom_UpdateArray(line, rooms_array, room_index);
-		room_index++;	
-	}
-	CreateRoomSemaphores(semaphoreHandles, rooms_array, room_index); 
+	CreateRoomSemaphores(semaphoreHandles, rooms_array, num_of_rooms); 
 
-	//The following is just an example to check how open semaphore works. We maybe don't need the semaphore handles array
-
-	//HANDLE semHan = OpenSemaphore(SYNCHRONIZE, FALSE, "RoomA");
-	//int waitcode = WaitForSingleObject(semHan, 5000);
-	//printf("\nreturned wait code in 1: %d\n", waitcode);
-	//waitcode = WaitForSingleObject(semHan, 5000);
-	//printf("returned wait code in 2: %d\n", waitcode);
-	//waitcode = WaitForSingleObject(semHan, 5000);
-	//printf("returned wait code in 3: %d\n", waitcode);
-	//waitcode = WaitForSingleObject(semHan, 5000);
-	//printf("returned wait code in 4: %d\n", waitcode);
-
-
-	//Get names from file
-	file_error = fopen_s(&names_fp, names_path, "r");
-	if (file_error) {
-		printf("error opening file in path %s", names_path);
-	}
-
-	while (feof(names_fp) == 0) {
-		/////reset line
-		fgets(line, MAX_LINE_LEN, names_fp);
-		RemoveNewLine(line);
-		CreateGuests_UpdateArray(line, guests_array, names_index);
-		// CreateThreadParams(thread_param_array, guests_array, names_index); // moved this line to the for loop below
-		names_index++;
-	}
 	int day = 1;
 	int counter = 0;
-	for (int i = 0; i < names_index; i++) {  /* names_index will hold the actual number of guests*/
+	for (int i = 0; i < num_of_guests; i++) {  /* names_index will hold the actual number of guests*/
 		/* find room for guest i*/
-		FindRoom_UpdateGuest(guests_array[i], rooms_array, room_index);  /* room index holds the number of rooms (4 in this case) */
+		FindRoom_UpdateGuest(guests_array[i], rooms_array, num_of_rooms);  /* room index holds the number of rooms (4 in this case) */
 		//*guests_array[i])
 		CreateThreadParams(thread_param_array, guests_array, i, &day, &counter);
 		guest_thread_handles[i] = NULL;
@@ -114,7 +64,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	int waitcode = WaitForMultipleObjects(names_index, guest_thread_handles, TRUE, INFINITE);
+	int waitcode = WaitForMultipleObjects(num_of_guests, guest_thread_handles, TRUE, INFINITE);
 	if (waitcode == 0) {
 		printf("OK\n");
 	}
@@ -217,7 +167,6 @@ void FindRoom_UpdateGuest(guest *guest_to_check, room *room_array[], int num_of_
 
 }
 
-
 void CreateThreadParams(thread_param_struct* thread_param_array[], guest* guests_array[], int names_index, int *day, int *counter) {
 	thread_param_struct *s_ptr = (thread_param_struct *)malloc(sizeof(thread_param_struct));
 	if (NULL == s_ptr) {
@@ -229,4 +178,61 @@ void CreateThreadParams(thread_param_struct* thread_param_array[], guest* guests
 	s_ptr->day = day;
 	s_ptr->counter = counter;
 	thread_param_array[names_index] = s_ptr;
+}
+
+void AllocateMemory_AssignFilename(char** destination, char* input_folder ,int rooms_names_len, char* filename){ //"\\rooms") {
+	*destination = (char *)malloc(rooms_names_len);
+	if (destination == NULL) {
+		printf("Memory allocation error");
+		/* error handle*/
+		exit(1);
+	}
+	strcpy_s(*destination, rooms_names_len, input_folder);
+	strcat_s(*destination, rooms_names_len, filename);
+	
+}
+
+int GetRoomsFromFile(char* rooms_file_path, room *rooms_array[]) {
+	
+	FILE *rooms_fp = NULL;
+	int file_error = 0;
+	char line[MAX_LINE_LEN] = "";
+	int room_index = 0;
+	file_error = fopen_s(&rooms_fp, rooms_file_path, "r");
+	if (file_error) {
+		printf("error opening file in path %s", rooms_file_path);
+	}
+
+	while (feof(rooms_fp) == 0) {
+		///////////////reset line
+		fgets(line, MAX_LINE_LEN, rooms_fp);
+		RemoveNewLine(line);
+		CreateRoom_UpdateArray(line, rooms_array, room_index);
+		room_index++;
+	}
+
+	return room_index; /* this will be the actual number of available rooms */
+}
+
+int GetNamesFromFile(char* names_file_path, guest *guests_array[]) {
+
+	FILE *names_fp = NULL;
+	int file_error = 0;
+	char line[MAX_LINE_LEN] = "";
+	int names_index = 0;
+	file_error = fopen_s(&names_fp, names_file_path, "r");
+	if (file_error) {
+		printf("error opening file in path %s", names_file_path);
+	}
+
+	while (feof(names_fp) == 0) {
+		/////reset line
+		fgets(line, MAX_LINE_LEN, names_fp);
+		RemoveNewLine(line);
+		CreateGuests_UpdateArray(line, guests_array, names_index);
+		// CreateThreadParams(thread_param_array, guests_array, names_index); // moved this line to the for loop below
+		names_index++;
+	}
+
+	return names_index; /* this will be the actual number of guests */
 }

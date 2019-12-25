@@ -44,3 +44,9 @@ void UpdateArrayRooms(room *room_array[], char room_name[], int max_guests, int 
 void UpdateArrayNames(guest *names_array[], char name[], int nights, int index);
 void FindRoom_UpdateGuest(guest *guest_to_check, room *room_array[], int num_of_rooms);
 void CreateThreadParams(thread_param_struct* thread_param_array[], guest* guests_array[], int names_index, int* day, int* counter);
+
+void AllocateMemory_AssignFilename(char** destination, char* input_folder, int rooms_names_len, char* filename);
+
+int GetRoomsFromFile(char* rooms_file_path, room *rooms_array[]);
+
+int GetNamesFromFile(char* names_file_path, guest *guests_array[]);
