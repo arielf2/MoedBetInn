@@ -27,6 +27,7 @@ int main(int argc, char *argv[]) {
 	int num_of_guests = 0;
 	int num_of_rooms = 0;
 	int day_counter = 0;
+	int handles_exit_code;
 
 	//char path[] = argv[1] + rooms.txt
 	char *rooms_path = NULL;
@@ -54,7 +55,7 @@ int main(int argc, char *argv[]) {
 		/* find room for guest i*/
 		FindRoom_UpdateGuest(guests_array[i], rooms_array, num_of_rooms);  /* room index holds the number of rooms (4 in this case) */
 		//*guests_array[i])
-		CreateThreadParams(thread_param_array, guests_array, i, &day, &counter);
+		CreateThreadParams(thread_param_array, guests_array, i, &day, &counter, &num_of_guests);
 		guest_thread_handles[i] = NULL;
 
 		guest_thread_handles[i] = CreateThreadSimple(GuestThread, (thread_param_array[i]), &(guest_thread_ids[i]));
@@ -69,7 +70,12 @@ int main(int argc, char *argv[]) {
 		printf("OK\n");
 	}
 
+	handles_exit_code = CloseHandles(guest_thread_handles);
+	if (handles_exit_code == 0) {
+		printf("Couldn't close handles, error code %d\n", GetLastError());
+	}
 
+	printf("Number of days until everyone left, %d", day_counter);
 
 }
 
@@ -167,7 +173,7 @@ void FindRoom_UpdateGuest(guest *guest_to_check, room *room_array[], int num_of_
 
 }
 
-void CreateThreadParams(thread_param_struct* thread_param_array[], guest* guests_array[], int names_index, int *day, int *counter) {
+void CreateThreadParams(thread_param_struct* thread_param_array[], guest* guests_array[], int names_index, int *day, int *counter, int *num_of_guests) {
 	thread_param_struct *s_ptr = (thread_param_struct *)malloc(sizeof(thread_param_struct));
 	if (NULL == s_ptr) {
 		printf("Memory allocation error");
@@ -177,6 +183,7 @@ void CreateThreadParams(thread_param_struct* thread_param_array[], guest* guests
 	s_ptr->guest = guests_array[names_index];
 	s_ptr->day = day;
 	s_ptr->counter = counter;
+	s_ptr->num_of_guests = num_of_guests;
 	thread_param_array[names_index] = s_ptr;
 }
 

@@ -34,6 +34,7 @@ typedef struct _thread_param_struct
 
 	int *day;
 	int *counter;
+	int *num_of_guests;
 
 } thread_param_struct;
 
