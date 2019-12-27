@@ -38,18 +38,69 @@ typedef struct _thread_param_struct
 
 } thread_param_struct;
 
+
+/*	Name: CreateRoom_UpdateArray
+	Description:
+	Parameters:
+	Returns:	*/
 void CreateRoom_UpdateArray(char str[], room *room_array[], int index);
+
+/*	Name: CreateGuests_UpdateArray
+	Description:
+	Parameters:
+	Returns:	*/
 void CreateGuests_UpdateArray(char str[], guest* names_array[], int index);
+
+/*	Name: RemoveNewLine
+	Description:
+	Parameters:
+	Returns:	*/
 void RemoveNewLine(char* str);
+
+/*	Name: UpdateArrayRooms
+	Description:
+	Parameters:
+	Returns:	*/
 void UpdateArrayRooms(room *room_array[], char room_name[], int max_guests, int price, int index);
+
+/*	Name: UpdateArrayNames
+	Description:
+	Parameters:
+	Returns:	*/
 void UpdateArrayNames(guest *names_array[], char name[], int nights, int index);
+
+/*	Name: FindRoom_UpdateGuest
+	Description:
+	Parameters:
+	Returns:	*/
 void FindRoom_UpdateGuest(guest *guest_to_check, room *room_array[], int num_of_rooms);
+
+/*	Name: CreateThreadParams
+	Description:
+	Parameters:
+	Returns:	*/
 void CreateThreadParams(thread_param_struct* thread_param_array[], guest* guests_array[], int names_index, int* day, int* counter, int *num_of_guests);
 
+/*	Name: AllocateMemory_AssignFilename
+	Description:
+	Parameters:
+	Returns:	*/
 void AllocateMemory_AssignFilename(char** destination, char* input_folder, int rooms_names_len, char* filename);
 
+/*	Name: GetRoomsFromFile
+	Description:
+	Parameters:
+	Returns:	*/
 int GetRoomsFromFile(char* rooms_file_path, room *rooms_array[]);
 
+/*	Name: GetNamesFromFile
+	Description:
+	Parameters:
+	Returns:	*/
 int GetNamesFromFile(char* names_file_path, guest *guests_array[]);
 
+/*	Name: CreateRoom_UpdateArray
+Description:
+Parameters:
+Returns:	*/
 int CloseHandles(HANDLE thread_handles[], int num_of_threads);
