@@ -28,6 +28,7 @@ int main(int argc, char *argv[]) {
 	int num_of_guests = 0;
 	int num_of_rooms = 0;
 	int day_counter = 0;
+	int max_guests = 0;
 	int handles_exit_code;
 	int i;
 	//char path[] = argv[1] + rooms.txt
@@ -54,9 +55,9 @@ int main(int argc, char *argv[]) {
 	int counter = 0;
 	for (int i = 0; i < num_of_guests; i++) {  /* names_index will hold the actual number of guests*/
 		/* find room for guest i*/
-		FindRoom_UpdateGuest(guests_array[i], rooms_array, num_of_rooms);  /* room index holds the number of rooms (4 in this case) */
+		max_guests = FindRoom_UpdateGuest(guests_array[i], rooms_array, num_of_rooms);  /* room index holds the number of rooms (4 in this case) */
 		//*guests_array[i])
-		CreateThreadParams(thread_param_array, guests_array, i, &day, &counter, &num_of_guests);
+		CreateThreadParams(thread_param_array, guests_array, i, &day, &counter, &num_of_guests, &max_guests);
 		///try
 		//thread_param_array[i]->barrier_handle = &barrierSemaphore;
 		guest_thread_handles[i] = NULL;
@@ -163,21 +164,25 @@ void UpdateArrayNames(guest *names_array[], char name[], int nights, int index) 
 	names_array[index] = n_ptr;
 }
 
-void FindRoom_UpdateGuest(guest *guest_to_check, room *room_array[], int num_of_rooms) {
+int FindRoom_UpdateGuest(guest *guest_to_check, room *room_array[], int num_of_rooms) {
 	int sum = guest_to_check->money;
 	int i = 0;
+	int max_guests_in_suitable_room = 0;
 
 	for (i; i < num_of_rooms; i++) {
 		if (sum % (room_array[i]->price_for_night) == 0) {  /* 46 % 23 == 0 for example*/
 			guest_to_check->num_of_nights = (sum / room_array[i]->price_for_night);
 			strcpy_s(guest_to_check->suitable_room, ROOM_GUEST_NAME_LEN, room_array[i]->name);
+			max_guests_in_suitable_room = room_array[i]->max_guests;
 			break;
 		}
 	}
 
+	return max_guests_in_suitable_room;
+
 }
 
-void CreateThreadParams(thread_param_struct* thread_param_array[], guest* guests_array[], int names_index, int *day, int *counter, int *num_of_guests) {
+void CreateThreadParams(thread_param_struct* thread_param_array[], guest* guests_array[], int names_index, int *day, int *counter, int *num_of_guests, int* max_guests) {
 	thread_param_struct *s_ptr = (thread_param_struct *)malloc(sizeof(thread_param_struct));
 	if (NULL == s_ptr) {
 		printf("Memory allocation error");
@@ -188,6 +193,7 @@ void CreateThreadParams(thread_param_struct* thread_param_array[], guest* guests
 	s_ptr->day = day;
 	s_ptr->counter = counter;
 	s_ptr->num_of_guests = num_of_guests;
+	s_ptr->max_guests_in_suitable_room = max_guests;
 	thread_param_array[names_index] = s_ptr;
 }
 

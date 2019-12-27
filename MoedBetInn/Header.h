@@ -35,8 +35,8 @@ typedef struct _thread_param_struct
 	int *day;
 	int *counter;
 	int *num_of_guests;
-	HANDLE *barrier_handle;
 
+	int *max_guests_in_suitable_room;
 } thread_param_struct;
 
 
@@ -74,13 +74,13 @@ void UpdateArrayNames(guest *names_array[], char name[], int nights, int index);
 	Description:
 	Parameters:
 	Returns:	*/
-void FindRoom_UpdateGuest(guest *guest_to_check, room *room_array[], int num_of_rooms);
+int FindRoom_UpdateGuest(guest *guest_to_check, room *room_array[], int num_of_rooms);
 
 /*	Name: CreateThreadParams
 	Description:
 	Parameters:
 	Returns:	*/
-void CreateThreadParams(thread_param_struct* thread_param_array[], guest* guests_array[], int names_index, int* day, int* counter, int *num_of_guests);
+void CreateThreadParams(thread_param_struct* thread_param_array[], guest* guests_array[], int names_index, int* day, int* counter, int *num_of_guests, int* max_guests);
 
 /*	Name: AllocateMemory_AssignFilename
 	Description:

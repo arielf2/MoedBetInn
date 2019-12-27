@@ -70,7 +70,10 @@ int guest_function(thread_param_struct* thread_param) {
 
  */	
 	//CreateSemaphore(NULL, thread_param->, 10, room_array[i]->name)
-	HANDLE room_semaphore = OpenSemaphore(SYNCHRONIZE, FALSE, thread_param->guest->suitable_room);
+	//HANDLE room_semaphore = OpenSemaphore(SYNCHRONIZE, FALSE, thread_param->guest->suitable_room);
+	HANDLE room_semaphore = CreateSemaphore(NULL, *(thread_param->max_guests_in_suitable_room), MAX_NUMBER_OF_GUESTS, thread_param->guest->suitable_room);
+	printf("%d", GetLastError());
+	
 
 	//barrier_semaphore = OpenSemaphore()
 	//HANDLE barrier_semaphore = NULL;
