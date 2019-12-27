@@ -1,6 +1,8 @@
 #include "ThreadFuncs.h"
 #include "Header.h"
 
+
+extern HANDLE barrier_semaphore;
 //int CreateThreadsForGuests(guest *guests_array[]) {
 //
 //}
@@ -66,9 +68,12 @@ int guest_function(thread_param_struct* thread_param) {
 	char suitable_room[ROOM_GUEST_NAME_LEN];
 	int num_of_nights;
 
- */
+ */	
+	//CreateSemaphore(NULL, thread_param->, 10, room_array[i]->name)
 	HANDLE room_semaphore = OpenSemaphore(SYNCHRONIZE, FALSE, thread_param->guest->suitable_room);
-	HANDLE barrier_semaphore = NULL;
+
+	//barrier_semaphore = OpenSemaphore()
+	//HANDLE barrier_semaphore = NULL;
 	HANDLE log_file_mutex = NULL;
 	HANDLE count_mutex = NULL;
 	
@@ -94,8 +99,10 @@ int guest_function(thread_param_struct* thread_param) {
 		// check waitcodes
 		if (room_wait_code == WAIT_OBJECT_0) {	/* guest can enter the room */
 			while (1) {
+				
 				count_mutex = OpenMutex(SYNCHRONIZE, FALSE, "countMutex");
 				if (in_room == 0) {
+					// guest now entered room
 					start_day = *(thread_param->day);
 					log_file_mutex = OpenMutex(SYNCHRONIZE, FALSE, "logFileMutex");
 
@@ -114,28 +121,28 @@ int guest_function(thread_param_struct* thread_param) {
 					}
 					else { /* check waitcodes*/
 						printf("waitcode received: %d, error: %d\n", file_wait_code, GetLastError());
-
 					}
 					in_room = 1;
 				}
-				
-				printf("Guest %s now waiting on count semaphore\n", thread_param->guest->name);
+							
+				printf("Guest %s now waiting on count mutex\n", thread_param->guest->name);
 				count_wait_code = WaitForSingleObject(count_mutex, INFINITE);
 				if (count_wait_code == WAIT_OBJECT_0) {
 					/* implement Barrier here */
 					*(thread_param->counter) = *(thread_param->counter) + 1;
 					//*(thread_param->counter)++;
 					if (*(thread_param->counter) == *(thread_param->num_of_guests)) {
+						printf("%d guests have arrived\n", *(thread_param->counter));
 						*(thread_param->day) = *(thread_param->day) + 1;
 						//printf("Day updates to %d by %s\n", *(thread_param->day), *(thread_param->guest->name));
-						barrier_semaphore = OpenSemaphoreW(SYNCHRONIZE, FALSE, "barrierSemaphore");
-
-						barrier_retrun_value = ReleaseSemaphore(barrier_semaphore, thread_param->num_of_guests, NULL);
+						//barrier_semaphore = OpenSemaphoreW(SYNCHRONIZE, FALSE, "barrierSemaphore");
+						printf("day passed to day %d", *(thread_param->day));
+						barrier_retrun_value = ReleaseSemaphore(barrier_semaphore, *(thread_param->num_of_guests), NULL);
 						if (barrier_retrun_value == 0) {
 							printf("Error releasing barrier semaphore with error %d\n", GetLastError());
 						}
 
-						barrier_semaphore = NULL;
+						//barrier_semaphore = NULL;
 					}
 
 					count_error_code = ReleaseMutex(count_mutex);
@@ -143,9 +150,9 @@ int guest_function(thread_param_struct* thread_param) {
 						printf("Error releasing count mutex with error %d\n", GetLastError());
 					}
 					/*barrier wait*/
-					barrier_semaphore = OpenSemaphore(SYNCHRONIZE, FALSE, "barrierSemaphore");
+					//barrier_semaphore = OpenSemaphore(SYNCHRONIZE, FALSE, "barrierSemaphore");
 
-					barrier_wait_code = WaitForSingleObject(*(thread_param->barrier_handle), INFINITE);
+					barrier_wait_code = WaitForSingleObject(barrier_semaphore, INFINITE);
 					if (barrier_wait_code == WAIT_OBJECT_0) {
 						/* check day and see if should leave room*/
 						if ((thread_param->guest->num_of_nights) <= (*(thread_param->day) - start_day)) {/*means guest should leave*/
@@ -170,14 +177,14 @@ int guest_function(thread_param_struct* thread_param) {
 
 							}
 						}
-						barrier_semaphore = NULL;
+						//barrier_semaphore = NULL;
 
 					}
 					else {
 						/* check waitcodes*/
-				/* barrier wait code has error*/
-						printf("barrier error");
-						barrier_semaphore = NULL;
+						/* barrier wait code has error*/
+						printf("barrier error %d, code %d\n", barrier_wait_code, GetLastError());
+						//barrier_semaphore = NULL;
 
 					}
 				}
@@ -197,22 +204,24 @@ int guest_function(thread_param_struct* thread_param) {
 				/* implement Barrier here */
 				*(thread_param->counter) = *(thread_param->counter) + 1;
 				if (*(thread_param->counter) == *(thread_param->num_of_guests)) {
+					printf("%d guests have arrived\n",*(thread_param->counter));
 					*(thread_param->day) = *(thread_param->day) + 1;
 					// if counter == 5, need to reset counter?
+					printf("day passed to day %d\n", *(thread_param->day));
 					*(thread_param->counter) = 0;
 					open_barrier_guest = 1;
 
 					//int my_day = *thread_param->day;
 					//printf("Day updates to %d by %s\n", *(thread_param->day), *(thread_param->guest->name));
-					printf("Day increment\n");
+
 
 					//barrier_semaphore = CreateSemaphore(NULL, 0, 5, "barrierSemaphore");
-					barrier_semaphore = OpenSemaphore(SYNCHRONIZE, FALSE, "barrierSemaphore");
-					barrier_retrun_value = ReleaseSemaphore(*(thread_param->barrier_handle), *(thread_param->num_of_guests), NULL);
+				//	barrier_semaphore = OpenSemaphore(SYNCHRONIZE, FALSE, "barrierSemaphore");
+					barrier_retrun_value = ReleaseSemaphore(barrier_semaphore, *(thread_param->num_of_guests), NULL);
 					if (barrier_retrun_value == 0) {
 						printf("Error releasing barrier semaphore with error %d\n", GetLastError());
 					}
-					barrier_semaphore = NULL;
+					//barrier_semaphore = NULL;
 
 				}
 
@@ -221,17 +230,17 @@ int guest_function(thread_param_struct* thread_param) {
 					printf("Error releasing count mutex with error %d\n", GetLastError());
 				}
 				/*barrier wait*/
-				barrier_semaphore = OpenSemaphore(SYNCHRONIZE, FALSE, "barrierSemaphore");
-				barrier_wait_code = WaitForSingleObject(*(thread_param->barrier_handle), INFINITE);
+				//barrier_semaphore = OpenSemaphore(SYNCHRONIZE, FALSE, "barrierSemaphore");
+				barrier_wait_code = WaitForSingleObject(barrier_semaphore , INFINITE);
 				if (barrier_wait_code == WAIT_OBJECT_0) {
 					/*do nothing*/
-					barrier_semaphore = NULL;
+					//barrier_semaphore = NULL;
 				}
 				else {
 					/* check waitcodes*/
 				/* barrier wait code has error*/
 					printf("barrier error with error %d\n", GetLastError());
-					barrier_semaphore = NULL;
+					//barrier_semaphore = NULL;
 
 				}
 			}

@@ -9,14 +9,15 @@
 #include "ThreadFuncs.h"
 #include "Semaphores.h"
 
-
-
+HANDLE barrier_semaphore = NULL;
+HANDLE room_semaphores[MAX_ROOMS] = NULL;
 int main(int argc, char *argv[]) {
 
 	char delim = " ";
 	HANDLE countMutex = CreateMutex(NULL, FALSE, "countMutex");
 	HANDLE logFileMutex = CreateMutex(NULL, FALSE, "logFileMutex");
-	HANDLE barrierSemaphore = CreateSemaphore(NULL, 0, MAX_NUMBER_OF_GUESTS, "barrierSemaphore");
+	barrier_semaphore = CreateSemaphore(NULL, 0, MAX_NUMBER_OF_GUESTS, NULL);
+	
 	HANDLE guest_thread_handles[MAX_NUMBER_OF_GUESTS];
 	int guest_thread_ids[MAX_NUMBER_OF_GUESTS];
 
@@ -47,7 +48,7 @@ int main(int argc, char *argv[]) {
 	num_of_guests = GetNamesFromFile(names_path, guests_array);
 	free(names_path); //the filename is no longer needed, free
 
-	CreateRoomSemaphores(semaphoreHandles, rooms_array, num_of_rooms); 
+	CreateRoomSemaphores(room_semaphores, rooms_array, num_of_rooms); 
 
 	int day = 1;
 	int counter = 0;
@@ -57,7 +58,7 @@ int main(int argc, char *argv[]) {
 		//*guests_array[i])
 		CreateThreadParams(thread_param_array, guests_array, i, &day, &counter, &num_of_guests);
 		///try
-		thread_param_array[i]->barrier_handle = &barrierSemaphore;
+		//thread_param_array[i]->barrier_handle = &barrierSemaphore;
 		guest_thread_handles[i] = NULL;
 
 		guest_thread_handles[i] = CreateThreadSimple(GuestThread, (thread_param_array[i]), &(guest_thread_ids[i]));
