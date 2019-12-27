@@ -117,12 +117,13 @@ int guest_function(thread_param_struct* thread_param) {
 			count_wait_code = WaitForSingleObject(count_mutex, INFINITE);
 			if (count_wait_code == WAIT_OBJECT_0) {
 				/* implement Barrier here */
-				*(thread_param->counter)++;
+				*(thread_param->counter) = *(thread_param->counter) + 1;
+				//*(thread_param->counter)++;
 				if (*(thread_param->counter) == *(thread_param->num_of_guests)) {
-					*(thread_param->day)++;
+					*(thread_param->day) = *(thread_param->day) + 1;
 					printf("Day updates to %d by %s\n", *(thread_param->day), *(thread_param->guest->name));
-					barrier_semaphore = OpenMutex(SYNCHRONIZE, FALSE, "barrierSemaphore");
-					barrir_retrun_value = ReleaseSemaphore(barrier_semaphore, *(thread_param->num_of_guests), NULL);
+					barrier_semaphore = OpenSemaphore(SYNCHRONIZE, FALSE, "barrierSemaphore");
+					barrir_retrun_value = ReleaseSemaphore(barrier_semaphore, thread_param->num_of_guests, NULL);
 					if (barrir_retrun_value == 0) {
 						printf("Error releasing barrier semaphore with error %d\n", GetLastError());
 					}
@@ -181,11 +182,16 @@ int guest_function(thread_param_struct* thread_param) {
 			count_wait_code = WaitForSingleObject(count_mutex, INFINITE);
 			if (count_wait_code == WAIT_OBJECT_0) {
 				/* implement Barrier here */
-				*(thread_param->counter)++;
+				*(thread_param->counter) = *(thread_param->counter) + 1;
 				if (*(thread_param->counter) == *(thread_param->num_of_guests)) {
-					*(thread_param->day)++;
-					printf("Day updates to %d by %s\n", *(thread_param->day), *(thread_param->guest->name));
-					barrier_semaphore = OpenMutex(SYNCHRONIZE, FALSE, "barrierSemaphore");
+					*(thread_param->day) = *(thread_param->day) + 1;
+					// if counter == 5, need to reset counter?
+					*(thread_param->counter) = 0;
+					//int my_day = *thread_param->day;
+					//printf("Day updates to %d by %s\n", *(thread_param->day), *(thread_param->guest->name));
+					printf("Day increment");
+					barrier_semaphore = OpenSemaphore(SEMAPHORE_MODIFY_STATE, FALSE, "barrierSemaphore");
+					//barrier_semaphore = CreateSemaphore(NULL, 0, 5, "barrierSemaphore");
 					barrir_retrun_value = ReleaseSemaphore(barrier_semaphore, *(thread_param->num_of_guests), NULL);
 					if (barrir_retrun_value == 0) {
 						printf("Error releasing barrier semaphore with error %d\n", GetLastError());
@@ -198,7 +204,7 @@ int guest_function(thread_param_struct* thread_param) {
 					printf("Error releasing count mutex with error %d\n", GetLastError());
 				}
 				/*barrier wait*/
-				barrier_semaphore = OpenSemaphore(SYNCHRONIZE, FALSE, "barrierSemaphore");
+				//barrier_semaphore = OpenSemaphore(SEMAPHORE_MODIFY_STATE, FALSE, "barrierSemaphore");
 				barrier_wait_code = WaitForSingleObject(barrier_semaphore, INFINITE);
 				if (barrier_wait_code == WAIT_OBJECT_0) {
 					/*do nothing*/
@@ -206,7 +212,7 @@ int guest_function(thread_param_struct* thread_param) {
 				else {
 					/* check waitcodes*/
 				/* barrier wait code has error*/
-					printf("barrier error");
+					printf("barrier error with error %d\n", GetLastError());
 
 				}
 			}

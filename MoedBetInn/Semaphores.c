@@ -15,7 +15,7 @@ void CreateRoomSemaphores(HANDLE semaphore_array[], room *room_array[], int num_
 			/* close handles, exit*/
 		}
 		else {
-			printf("Create semaphore with %d, %s", room_array[i]->max_guests, room_array[i]->name);
+			printf("Create semaphore with %d guests, %s\n", room_array[i]->max_guests, room_array[i]->name);
 		}
 	}
 }
