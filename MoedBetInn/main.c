@@ -10,7 +10,7 @@
 #include "Semaphores.h"
 
 HANDLE barrier_semaphore = NULL;
-HANDLE room_semaphores[MAX_ROOMS] = NULL;
+
 int main(int argc, char *argv[]) {
 
 	char delim = " ";
@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
 	num_of_guests = GetNamesFromFile(names_path, guests_array);
 	free(names_path); //the filename is no longer needed, free
 
-	CreateRoomSemaphores(room_semaphores, rooms_array, num_of_rooms); 
+	CreateRoomSemaphores(semaphoreHandles, rooms_array, num_of_rooms); 
 
 	int day = 1;
 	int counter = 0;
