@@ -81,7 +81,8 @@ int guest_function(thread_param_struct* thread_param) {
 	int barrier_wait_code = 0;
 	int roomlog_file_error = 0;
 	FILE *roomlog_fp;
-	int error_code = 0;
+	int count_error_code = 0;
+	int log_file_error_code;
 	while (1) {
 
 		room_wait_code = WaitForSingleObject(room_semaphore, TIMEOUT);
@@ -96,9 +97,9 @@ int guest_function(thread_param_struct* thread_param) {
 				/* means no one is writing the file, the mutex is "open" for this thread to write */
 				/* write to log file */
 				WriteToRoomLogIn(thread_param->guest->name, thread_param->guest->suitable_room, &roomlog_fp, start_day);
-				error_code = ReleaseMutex(log_file_mutex);
+				log_file_error_code = ReleaseMutex(log_file_mutex);
 			
-				if (error_code == 0) {
+				if (log_file_error_code == 0) {
 					printf("Error releasing mutex with error %d\n", GetLastError());
 				}
 				
@@ -114,6 +115,7 @@ int guest_function(thread_param_struct* thread_param) {
 				*(thread_param->counter)++;
 				if (*(thread_param->counter) == *(thread_param->num_of_guests)) {
 					*(thread_param->day)++;
+					printf("Day updates to %d by %s\n", *(thread_param->day), *(thread_param->guest->name));
 					barrier_semaphore = OpenMutex(SYNCHRONIZE, FALSE, "barrierSemaphore");
 					barrir_retrun_value = ReleaseSemaphore(barrier_semaphore, *(thread_param->num_of_guests), NULL);
 					if (barrir_retrun_value == 0) {
@@ -122,36 +124,42 @@ int guest_function(thread_param_struct* thread_param) {
 					
 				}
 											
-				error_code = ReleaseMutex(count_mutex);
-				if (error_code == 0) {
+				count_error_code = ReleaseMutex(count_mutex);
+				if (count_error_code == 0) {
 					printf("Error releasing count mutex with error %d\n", GetLastError());
 				}
 				/*barrier wait*/
+				barrier_semaphore = OpenMutex(SYNCHRONIZE, FALSE, "barrierSemaphore");
 				barrier_wait_code = WaitForSingleObject(barrier_semaphore, INFINITE);
-				/* check day and see if should leave room*/
-				if ((thread_param->guest->num_of_nights) <= (*(thread_param->day) - start_day)) {/*means guest should leave*/
-					file_wait_code = WaitForSingleObject(log_file_mutex, INFINITE);
-					if (file_wait_code == WAIT_OBJECT_0) {
-						/* means no one is writing the file, the mutex is "open" for this thread to write */
-						/* write to log file */
-						WriteToRoomLogOut(thread_param->guest->name, thread_param->guest->suitable_room, &roomlog_fp, *(thread_param->day));
-						error_code = ReleaseMutex(log_file_mutex);
-						if (error_code == 0) {
-							printf("Error releasing mutex with error %d\n", GetLastError());
+				if (barrier_wait_code = WAIT_OBJECT_0) {
+					/* check day and see if should leave room*/
+					if ((thread_param->guest->num_of_nights) <= (*(thread_param->day) - start_day)) {/*means guest should leave*/
+						file_wait_code = WaitForSingleObject(log_file_mutex, INFINITE);
+						if (file_wait_code == WAIT_OBJECT_0) {
+							/* means no one is writing the file, the mutex is "open" for this thread to write */
+							/* write to log file */
+							WriteToRoomLogOut(thread_param->guest->name, thread_param->guest->suitable_room, &roomlog_fp, *(thread_param->day));
+							log_file_error_code = ReleaseMutex(log_file_mutex);
+							if (log_file_error_code == 0) {
+								printf("Error releasing mutex with error %d\n", GetLastError());
+							}
+							/*release room semaphore*/
+							room_semaphore_return_value = ReleaseSemaphore(room_semaphore, 1, NULL);
+							if (room_semaphore_return_value == 0) {
+								printf("Error releasing room semaphore with error %d\n", GetLastError());
+							}
+							break;
 						}
-						/*release room semaphore*/
-						room_semaphore_return_value = ReleaseSemaphore(room_semaphore, 1, NULL);
-						if (room_semaphore_return_value == 0) {
-							printf("Error releasing room semaphore with error %d\n", GetLastError());
-						}
-						break;
-					}
-					else { /* check waitcodes*/
-						printf("waitcode received: %d, error: %d\n", file_wait_code, GetLastError());
+						else { /* check waitcodes*/
+							printf("waitcode received: %d, error: %d\n", file_wait_code, GetLastError());
 
+						}
 					}
 				}
-				
+				else {
+					/* check waitcodes*/
+				/* barrier wait code has error*/
+				}
 			}
 			else { /* check waitcodes*/
 				/* count wait code has error*/
@@ -160,7 +168,7 @@ int guest_function(thread_param_struct* thread_param) {
 		else {
 			/* guest must wait - TIMEOUT */
 			printf("Guest %s has to wait for room %s\n", thread_param->guest->name, thread_param->guest->suitable_room);
-			break; //this is temporary
+			//break; //this is temporary
 		}
 	}
 	

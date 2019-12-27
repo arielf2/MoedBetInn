@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
 	int num_of_rooms = 0;
 	int day_counter = 0;
 	int handles_exit_code;
-
+	int i;
 	//char path[] = argv[1] + rooms.txt
 	char *rooms_path = NULL;
 	char *names_path = NULL;
@@ -69,11 +69,17 @@ int main(int argc, char *argv[]) {
 	if (waitcode == 0) {
 		printf("OK\n");
 	}
-
-	handles_exit_code = CloseHandles(guest_thread_handles);
-	if (handles_exit_code == 0) {
-		printf("Couldn't close handles, error code %d\n", GetLastError());
+	// Close thread handles
+	for (i = 0; i < num_of_guests; i++)
+	{
+		handles_exit_code = CloseHandle(guest_thread_handles[i]);
+		if (handles_exit_code == 0)
+		{
+			printf("Error when closing\n");
+			
+		}
 	}
+	 
 
 	printf("Number of days until everyone left, %d", day_counter);
 
