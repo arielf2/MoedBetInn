@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
 		printf("OK\n");
 	}
 
-	handles_exit_code = CloseHandles(guest_thread_handles);
+	handles_exit_code = CloseHandles(guest_thread_handles, num_of_guests);
 	if (handles_exit_code == 0) {
 		printf("Couldn't close handles, error code %d\n", GetLastError());
 	}
