@@ -134,9 +134,9 @@ int guest_function(thread_param_struct* thread_param) {
 					printf("Error releasing count mutex with error %d\n", GetLastError());
 				}
 				/*barrier wait*/
-				barrier_semaphore = OpenMutex(SYNCHRONIZE, FALSE, "barrierSemaphore");
+				barrier_semaphore = OpenSemaphore(SYNCHRONIZE, FALSE, "barrierSemaphore");
 				barrier_wait_code = WaitForSingleObject(barrier_semaphore, INFINITE);
-				if (barrier_wait_code = WAIT_OBJECT_0) {
+				if (barrier_wait_code == WAIT_OBJECT_0) {
 					/* check day and see if should leave room*/
 					if ((thread_param->guest->num_of_nights) <= (*(thread_param->day) - start_day)) {/*means guest should leave*/
 						file_wait_code = WaitForSingleObject(log_file_mutex, INFINITE);
@@ -164,15 +164,56 @@ int guest_function(thread_param_struct* thread_param) {
 				else {
 					/* check waitcodes*/
 				/* barrier wait code has error*/
+					printf("barrier error");
+
 				}
 			}
 			else { /* check waitcodes*/
 				/* count wait code has error*/
+				printf("count error");
 			}
 		}
 		else {
 			/* guest must wait - TIMEOUT */
 			printf("Guest %s has to wait for room %s\n", thread_param->guest->name, thread_param->guest->suitable_room);
+			count_mutex = OpenMutex(SYNCHRONIZE, FALSE, "countMutex");
+
+			count_wait_code = WaitForSingleObject(count_mutex, INFINITE);
+			if (count_wait_code == WAIT_OBJECT_0) {
+				/* implement Barrier here */
+				*(thread_param->counter)++;
+				if (*(thread_param->counter) == *(thread_param->num_of_guests)) {
+					*(thread_param->day)++;
+					printf("Day updates to %d by %s\n", *(thread_param->day), *(thread_param->guest->name));
+					barrier_semaphore = OpenMutex(SYNCHRONIZE, FALSE, "barrierSemaphore");
+					barrir_retrun_value = ReleaseSemaphore(barrier_semaphore, *(thread_param->num_of_guests), NULL);
+					if (barrir_retrun_value == 0) {
+						printf("Error releasing barrier semaphore with error %d\n", GetLastError());
+					}
+
+				}
+
+				count_error_code = ReleaseMutex(count_mutex);
+				if (count_error_code == 0) {
+					printf("Error releasing count mutex with error %d\n", GetLastError());
+				}
+				/*barrier wait*/
+				barrier_semaphore = OpenSemaphore(SYNCHRONIZE, FALSE, "barrierSemaphore");
+				barrier_wait_code = WaitForSingleObject(barrier_semaphore, INFINITE);
+				if (barrier_wait_code == WAIT_OBJECT_0) {
+					/*do nothing*/
+				}
+				else {
+					/* check waitcodes*/
+				/* barrier wait code has error*/
+					printf("barrier error");
+
+				}
+			}
+			else { /* check waitcodes*/
+				/* count wait code has error*/
+				printf("count error");
+			}
 			//break; //this is temporary
 		}
 	}
