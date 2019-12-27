@@ -35,6 +35,7 @@ typedef struct _thread_param_struct
 	int *day;
 	int *counter;
 	int *num_of_guests;
+	HANDLE *barrier_handle;
 
 } thread_param_struct;
 

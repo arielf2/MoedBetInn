@@ -56,6 +56,8 @@ int main(int argc, char *argv[]) {
 		FindRoom_UpdateGuest(guests_array[i], rooms_array, num_of_rooms);  /* room index holds the number of rooms (4 in this case) */
 		//*guests_array[i])
 		CreateThreadParams(thread_param_array, guests_array, i, &day, &counter, &num_of_guests);
+		///try
+		thread_param_array[i]->barrier_handle = &barrierSemaphore;
 		guest_thread_handles[i] = NULL;
 
 		guest_thread_handles[i] = CreateThreadSimple(GuestThread, (thread_param_array[i]), &(guest_thread_ids[i]));
