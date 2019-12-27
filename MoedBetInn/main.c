@@ -69,15 +69,10 @@ int main(int argc, char *argv[]) {
 	if (waitcode == 0) {
 		printf("OK\n");
 	}
-	// Close thread handles
-	for (i = 0; i < num_of_guests; i++)
-	{
-		handles_exit_code = CloseHandle(guest_thread_handles[i]);
-		if (handles_exit_code == 0)
-		{
-			printf("Error when closing\n");
-			
-		}
+
+	handles_exit_code = CloseHandles(guest_thread_handles);
+	if (handles_exit_code == 0) {
+		printf("Couldn't close handles, error code %d\n", GetLastError());
 	}
 	 
 
@@ -248,4 +243,26 @@ int GetNamesFromFile(char* names_file_path, guest *guests_array[]) {
 	}
 
 	return names_index; /* this will be the actual number of guests */
+}
+
+int CloseHandles(HANDLE thread_handles[], int num_of_threads) {
+	//close handels
+	int retval;
+	int func_retval = 0;
+	for (int k = 0; k < num_of_threads; k++)
+	{
+		if (thread_handles[k] != NULL) {
+			retval = CloseHandle(thread_handles[k]);
+			if (0 == retval)
+			{
+				printf("Error when closing handles\n");
+				func_retval = -1;
+			}
+		}
+		else {
+			func_retval = -1;
+		}
+
+	}
+	return func_retval;
 }

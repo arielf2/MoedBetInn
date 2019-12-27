@@ -85,6 +85,8 @@ int guest_function(thread_param_struct* thread_param) {
 	int log_file_error_code;
 	while (1) {
 
+		//printf("Guest %s trying to enter room %s, checking room semaphore\n", thread_param->guest->name, thread_param->guest->suitable_room);
+
 		room_wait_code = WaitForSingleObject(room_semaphore, TIMEOUT);
 		// check waitcodes
 		if (room_wait_code == WAIT_OBJECT_0) {	/* guest can enter the room */
@@ -92,8 +94,10 @@ int guest_function(thread_param_struct* thread_param) {
 			log_file_mutex = OpenMutex(SYNCHRONIZE, FALSE, "logFileMutex");
 			count_mutex = OpenMutex(SYNCHRONIZE, FALSE, "countMutex");
 
+			//printf("Guest %s now waiting for log in mutex\n", thread_param->guest->name);
 			file_wait_code = WaitForSingleObject(log_file_mutex, INFINITE);
 			if (file_wait_code == WAIT_OBJECT_0) {
+				printf("Guest %s now writing log in file\n", thread_param->guest->name);
 				/* means no one is writing the file, the mutex is "open" for this thread to write */
 				/* write to log file */
 				WriteToRoomLogIn(thread_param->guest->name, thread_param->guest->suitable_room, &roomlog_fp, start_day);
@@ -109,6 +113,7 @@ int guest_function(thread_param_struct* thread_param) {
 				printf("waitcode received: %d, error: %d\n", file_wait_code, GetLastError());
 
 			}
+			printf("Guest %s now waiting on count semaphore\n", thread_param->guest->name);
 			count_wait_code = WaitForSingleObject(count_mutex, INFINITE);
 			if (count_wait_code == WAIT_OBJECT_0) {
 				/* implement Barrier here */
