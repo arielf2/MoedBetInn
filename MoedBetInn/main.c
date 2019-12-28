@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
 	int day_counter = 0;
 	int max_guests = 0;
 	int handles_exit_code;
-	int i;
+	int i, j;
 	//char path[] = argv[1] + rooms.txt
 	char *rooms_path = NULL;
 	char *names_path = NULL;
@@ -59,9 +59,10 @@ int main(int argc, char *argv[]) {
 		//*guests_array[i])
 		CreateThreadParams(thread_param_array, guests_array, i, &day, &counter, &num_of_guests, &max_guests);
 		///try
-		
-		*thread_param_array[i]->guests = guests_array;
-		
+		for (j = 0; j < num_of_guests; j++) {
+			strcpy((thread_param_array[i]->guests[j]), guests_array[j]);
+		}
+		thread_param_array[i]->index = i;
 		guest_thread_handles[i] = CreateThreadSimple(GuestThread, (thread_param_array[i]), &(guest_thread_ids[i]));
 		if (guest_thread_handles[i] == NULL)
 		{

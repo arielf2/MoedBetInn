@@ -72,7 +72,7 @@ int guest_function(thread_param_struct* thread_param) {
 	//CreateSemaphore(NULL, thread_param->, 10, room_array[i]->name)
 	//HANDLE room_semaphore = OpenSemaphore(SYNCHRONIZE, FALSE, thread_param->guest->suitable_room);
 	HANDLE room_semaphore = CreateSemaphore(NULL, *(thread_param->max_guests_in_suitable_room), MAX_NUMBER_OF_GUESTS, thread_param->guest->suitable_room);
-	HANDLE personal_semaphore = CreateSemaphore(NULL, 0, 1, thread_param->guest->name);
+	HANDLE personal_semaphore = CreateSemaphore(NULL, 0, 1, thread_param->guests[thread_param->index]);
 	
 	printf("%d", GetLastError());
 	
@@ -85,6 +85,7 @@ int guest_function(thread_param_struct* thread_param) {
 	BOOL   barrier_retrun_value;
 	BOOL   count_mutex_retrun_value;
 	BOOL   room_semaphore_return_value;
+	BOOL   others_semaphore_return_value;
 	int start_day = 0;
 	int room_wait_code = 0;
 	int count_wait_code = 0;
@@ -98,8 +99,9 @@ int guest_function(thread_param_struct* thread_param) {
 	int guest_left= 0;
 	int in_room = 0;
 	int open_barrier_day = 0;
-	guest guests_array[MAX_NUMBER_OF_GUESTS] = &(thread_param->guests);
+	guest *guests_array[MAX_NUMBER_OF_GUESTS];
 
+	guests_array[0] = *(thread_param->guests);
 	 
 	while (1) {
 		if (guest_left == 1)
@@ -154,7 +156,7 @@ int guest_function(thread_param_struct* thread_param) {
 
 						/*Relese everyone's semaphore*/
 						for (int i = 0; i < *(thread_param->num_of_guests); i++) {
-							curr_handle = CreateSemaphore(NULL, 0, 1, thread_param->guests[i]->name );
+							curr_handle = CreateSemaphore(NULL, 0, 1, (thread_param->guests[i]));
 							ReleaseSemaphore(curr_handle, 1, NULL);
 							curr_handle = NULL;
 						}
@@ -243,8 +245,8 @@ int guest_function(thread_param_struct* thread_param) {
 					//barrier_semaphore = NULL;
 					/*Relese everyone's semaphore*/
 					for (int i = 0; i < *(thread_param->num_of_guests); i++) {
-						curr_handle = CreateSemaphore(NULL, 0, 1, guests_array[i].name);
-						ReleaseSemaphore(curr_handle, 1, NULL);
+						curr_handle = CreateSemaphore(NULL, 0, 1, (thread_param->guests[i]));
+						others_semaphore_return_value = ReleaseSemaphore(curr_handle, 1, NULL);
 						curr_handle = NULL;
 					}
 				}
