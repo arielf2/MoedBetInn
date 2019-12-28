@@ -14,7 +14,7 @@ void GuestEnterRoom(thread_param_struct *thread_param, int *start_day);
 
 int CheckLeaveRoom(thread_param_struct *thread_param, FILE *roomlog_fp, int* guest_left, int* start_day, HANDLE *room_semaphore);
 
-void UpdateCounter_GotoBarrier(thread_param_struct *thread_param);
+void UpdateCounter_GotoBarrier(thread_param_struct *thread_param, HANDLE curr_handle);
 
 HANDLE CreateThreadSimple(LPTHREAD_START_ROUTINE p_start_routine, LPVOID p_thread_parameters, LPDWORD p_thread_id)
 {
@@ -83,7 +83,6 @@ int guest_function(thread_param_struct* thread_param) {
 	HANDLE room_semaphore = CreateSemaphore(NULL, *(thread_param->max_guests_in_suitable_room), MAX_NUMBER_OF_GUESTS, thread_param->guest->suitable_room);
 	HANDLE personal_semaphore = CreateSemaphore(NULL, 0, 1, thread_param->guests[thread_param->index]);
 
-	printf("%d", GetLastError());
 
 
 	//barrier_semaphore = OpenSemaphore()
@@ -111,6 +110,7 @@ int guest_function(thread_param_struct* thread_param) {
 	int in_room = 0;
 	int open_barrier_day = 0;
 	guest *guests_array[MAX_NUMBER_OF_GUESTS];
+	HANDLE curr_handle = NULL;
 
 	guests_array[0] = *(thread_param->guests);
 
@@ -122,6 +122,8 @@ int guest_function(thread_param_struct* thread_param) {
 		room_wait_code = WaitForSingleObject(room_semaphore, TIMEOUT);
 		// check waitcodes
 		if (room_wait_code == WAIT_OBJECT_0) {	/* guest can enter the room */
+			printf("The guest %s entered room %s\n", thread_param->guest->name,thread_param->guest->suitable_room);
+
 			while (1) {
 
 				//count_mutex = OpenMutex(SYNCHRONIZE, FALSE, "countMutex");
@@ -131,30 +133,35 @@ int guest_function(thread_param_struct* thread_param) {
 					in_room = 1;
 				}
 
-				printf("Guest %s now waiting on count mutex\n", thread_param->guest->name);
+				//printf("Guest %s now waiting on count mutex\n", thread_param->guest->name);
 				count_wait_code = WaitForSingleObject(count_mutex, INFINITE);
 				if (count_wait_code == WAIT_OBJECT_0) {
-					UpdateCounter_GotoBarrier(thread_param);
+					UpdateCounter_GotoBarrier(thread_param, curr_handle);
 
 
 					count_error_code = ReleaseMutex(count_mutex);
 					if (count_error_code == 0) {
 						printf("Error releasing count mutex with error %d\n", GetLastError());
 					}
-					barrier_wait_code = WaitForSingleObject(barrier_semaphore, INFINITE);
-					if (barrier_wait_code == WAIT_OBJECT_0) {
-						/* check day and see if should leave room*/
-						if (CheckLeaveRoom(thread_param, &roomlog_fp, &guest_left, &start_day, &room_semaphore) == 1) {
-							guest_left = 1;
-							return 0;
+					/* personal semaphore wait*/
+					//personal_semaphore_wait_code = WaitForSingleObject(personal_semaphore, INFINITE);
+					if (personal_semaphore_wait_code == WAIT_OBJECT_0) {
+						barrier_wait_code = WaitForSingleObject(barrier_semaphore, INFINITE);
+						if (barrier_wait_code == WAIT_OBJECT_0) {
+							printf("Guest %s pass barrier\n", thread_param->guest->name);
+							/* check day and see if should leave room*/
+							if (CheckLeaveRoom(thread_param, &roomlog_fp, &guest_left, &start_day, &room_semaphore) == 1) {
+								guest_left = 1;
+								return 0;
+							}
+							//barrier_semaphore = NULL;
 						}
-						//barrier_semaphore = NULL;
-					}
-					else {
-						/* check waitcodes*/
-						/* barrier wait code has error*/
-						printf("barrier error %d, code %d\n", barrier_wait_code, GetLastError());
-						//barrier_semaphore = NULL;
+						else {
+							/* check waitcodes*/
+							/* barrier wait code has error*/
+							printf("barrier error %d, code %d\n", barrier_wait_code, GetLastError());
+							//barrier_semaphore = NULL;
+						}
 					}
 				}
 				else if (count_wait_code != WAIT_OBJECT_0) { // count wait code != 0
@@ -173,7 +180,7 @@ int guest_function(thread_param_struct* thread_param) {
 				/* implement Barrier here */
 
 
-				UpdateCounter_GotoBarrier(thread_param);
+				UpdateCounter_GotoBarrier(thread_param, curr_handle);
 
 				count_error_code = ReleaseMutex(count_mutex);
 				if (count_error_code == 0) {
@@ -188,6 +195,7 @@ int guest_function(thread_param_struct* thread_param) {
 					if (barrier_wait_code == WAIT_OBJECT_0) {
 						/*do nothing*/
 						//barrier_semaphore = NULL;
+						printf("Guest %s pass barrier\n", thread_param->guest->name);
 					}
 					else {
 						/* check waitcodes*/
@@ -219,7 +227,6 @@ int guest_function(thread_param_struct* thread_param) {
 
 WriteToRoomLogIn(char *guest_name, char *room_name, FILE *fp, int start_day) {
 	int roomlog_file_error = 0;
-	printf("The guest %s entered room %s\n", guest_name, room_name);
 	roomlog_file_error = fopen_s(&fp, "ex03_input\\roomLog.txt", "a");
 	if (roomlog_file_error) {
 		printf("error opening roomlog file");
@@ -267,15 +274,17 @@ void GuestEnterRoom(thread_param_struct *thread_param, int *start_day) {
 	}
 }
 
-void UpdateCounter_GotoBarrier(thread_param_struct *thread_param) {
+void UpdateCounter_GotoBarrier(thread_param_struct *thread_param, HANDLE curr_handle) {
 	int barrier_return_value = 0;
-	printf("Current day: %d, guest %d arriving\n", *thread_param->day, *thread_param->counter);
+	int i = 0;
 	*(thread_param->counter) = *(thread_param->counter) + 1;
+	printf("Current day: %d, guest %s increased counter to: %d\n", *thread_param->day, thread_param->guest->name, *thread_param->counter);
+
 	//*(thread_param->counter)++;
 	if (*(thread_param->counter) == *(thread_param->num_of_guests)) {
-		printf("%d guests have arrived\n", *(thread_param->counter));
-		*(thread_param->day) = *(thread_param->day) + 1;
 		
+		*(thread_param->day) = *(thread_param->day) + 1;
+		printf("guest %s increase day to: %d\n", thread_param->guest->name, *(thread_param->day));
 		/* temp */
 		*(thread_param->counter) = 0;
 
@@ -285,6 +294,17 @@ void UpdateCounter_GotoBarrier(thread_param_struct *thread_param) {
 		if (barrier_return_value == 0) {
 			printf("Error releasing barrier semaphore with error %d\n", GetLastError());
 		}
+
+		/*Relese everyone's semaphore*/
+		for (int i = 0; i < *(thread_param->num_of_guests); i++) {
+			curr_handle = CreateSemaphore(NULL, 0, 1, (thread_param->guests[i]));
+			ReleaseSemaphore(curr_handle, 1, NULL);
+			curr_handle = NULL;
+		}
+
+
+
+		/*                   */
 
 		/* else if (second_door_waitcode)  == error..
 		*/
@@ -319,6 +339,8 @@ int CheckLeaveRoom(thread_param_struct *thread_param, FILE *roomlog_fp, int* gue
 			*(guest_left) = 1;
 			//break; // return 0 maybe to break from 2 while loops?
 			leave = 1;
+			*(thread_param->num_of_guests) = *(thread_param->num_of_guests) - 1;
+			printf("Guest %s has to leave room: %s\n", thread_param->guest->name, thread_param->guest->suitable_room);
 		}
 
 		else { /* check waitcodes*/
