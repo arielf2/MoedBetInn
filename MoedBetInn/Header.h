@@ -36,7 +36,7 @@ typedef struct _thread_param_struct
 	int *counter;
 	int *num_of_guests;
 	char guests[MAX_NUMBER_OF_GUESTS][ROOM_GUEST_NAME_LEN];
-	int* start_days[MAX_NUMBER_OF_GUESTS];
+	//int* start_days[MAX_NUMBER_OF_GUESTS];
 	int num_of_nights[MAX_NUMBER_OF_GUESTS];
 	int index;
 	int *max_guests_in_suitable_room;

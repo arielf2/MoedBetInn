@@ -13,6 +13,9 @@ HANDLE barrier_semaphore = NULL;
 HANDLE second_door_semaphore = NULL;
 HANDLE log_file_mutex = NULL;
 HANDLE count_mutex = NULL;
+int start_days[MAX_NUMBER_OF_GUESTS];
+int guests_currently_in_rooms = 0;
+
 int main(int argc, char *argv[]) {
 
 	char delim = " ";
@@ -24,7 +27,7 @@ int main(int argc, char *argv[]) {
 	HANDLE personal_semaphors[MAX_NUMBER_OF_GUESTS];
 	int guest_thread_ids[MAX_NUMBER_OF_GUESTS];
 	int num_of_nights[MAX_NUMBER_OF_GUESTS];
-	int start_days[MAX_NUMBER_OF_GUESTS];
+	//int start_days[MAX_NUMBER_OF_GUESTS];
 	HANDLE semaphoreHandles[MAX_ROOMS];
 	guest *guests_array[MAX_NUMBER_OF_GUESTS];
 	room *rooms_array[MAX_ROOMS];
@@ -57,6 +60,7 @@ int main(int argc, char *argv[]) {
 	int day = 1;
 	int counter = 0;
 	for (int i = 0; i < num_of_guests; i++) {  /* names_index will hold the actual number of guests*/
+		start_days[i] = -1;
 		personal_semaphors[i] = CreateSemaphore(NULL, 0, 1, guests_array[i]);
 		/* find room for guest i*/
 		max_guests = FindRoom_UpdateGuest(guests_array[i], rooms_array, num_of_rooms, num_of_nights, i);  /* room index holds the number of rooms (4 in this case) */
@@ -67,9 +71,9 @@ int main(int argc, char *argv[]) {
 			strcpy((thread_param_array[i]->guests[j]), guests_array[j]);
 		}
 		thread_param_array[i]->index = i;
-		*thread_param_array[i]->start_days = start_days;
+		//*thread_param_array[i]->start_days = start_days;
 		*thread_param_array[i]->num_of_nights = num_of_nights;
-		start_days[i] = -1;
+		//start_days[i] = -1;
 		guest_thread_handles[i] = CreateThreadSimple(GuestThread, (thread_param_array[i]), &(guest_thread_ids[i]));
 		if (guest_thread_handles[i] == NULL)
 		{

@@ -1,4 +1,4 @@
-#include "ThreadFuncs.h"
+﻿#include "ThreadFuncs.h"
 #include "Header.h"
 
 
@@ -6,15 +6,17 @@ extern HANDLE barrier_semaphore;
 extern HANDLE second_door_semaphore;
 extern HANDLE log_file_mutex;
 extern HANDLE count_mutex;
+extern int start_days[MAX_NUMBER_OF_GUESTS];
+extern int guests_currently_in_rooms;
 //int CreateThreadsForGuests(guest *guests_array[]) {
 //
 //}
 
-void GuestEnterRoom(thread_param_struct *thread_param, int *start_day, int *start_days, int index);
+void GuestEnterRoom(thread_param_struct *thread_param, int *start_day, int index);
 
 int CheckLeaveRoom(thread_param_struct *thread_param, FILE *roomlog_fp, int* guest_left, int* start_day, HANDLE *room_semaphore);
 
-void UpdateCounter_GotoBarrier(thread_param_struct *thread_param, HANDLE curr_handle, int *guests_should_leave, int start_days[]);
+void UpdateCounter_GotoBarrier(thread_param_struct *thread_param, HANDLE curr_handle, int *guests_should_leave);
 
 HANDLE CreateThreadSimple(LPTHREAD_START_ROUTINE p_start_routine, LPVOID p_thread_parameters, LPDWORD p_thread_id)
 {
@@ -113,9 +115,9 @@ int guest_function(thread_param_struct* thread_param) {
 	guest *guests_array[MAX_NUMBER_OF_GUESTS];
 	HANDLE curr_handle = NULL;
 	int guests_should_leave = 0;
-	int start_days[MAX_NUMBER_OF_GUESTS];
-	start_days[0] = *(thread_param->start_days);
-
+	//int start_days[MAX_NUMBER_OF_GUESTS];
+	//start_days[0] = (thread_param->start_days);
+	
 	guests_array[0] = *(thread_param->guests);
 
 	while (1) {
@@ -134,8 +136,10 @@ int guest_function(thread_param_struct* thread_param) {
 				if (in_room == 0) {
 					// guest now entered room
 					start_days[thread_param->index] = *(thread_param->day);
-					GuestEnterRoom(thread_param, &start_day, start_days, (thread_param->index));
+					GuestEnterRoom(thread_param, &start_day, (thread_param->index));
 					in_room = 1;
+					guests_currently_in_rooms = guests_currently_in_rooms + 1;
+
 				}
 
 				//printf("Guest %s now waiting on count mutex\n", thread_param->guest->name);
@@ -157,6 +161,7 @@ int guest_function(thread_param_struct* thread_param) {
 							/* check day and see if should leave room*/
 							if (CheckLeaveRoom(thread_param, &roomlog_fp, &guest_left, &start_day, &room_semaphore) == 1) {
 								guest_left = 1;
+								guests_currently_in_rooms = guests_currently_in_rooms - 1;
 								return 0;
 							}
 							//barrier_semaphore = NULL;
@@ -204,12 +209,19 @@ int guest_function(thread_param_struct* thread_param) {
 
 						/* wait for guests should leave semaphore*/
 						//l_handle = CreateSemaphore(NULL, 0, MAX_NUMBER_OF_GUESTS, "leaving_guests_semaphore");
+
+						/*mutex down */
 						for (int m = 0; m < guests_should_leave; m++) {
 							leaving_guests_wait_code = WaitForSingleObject(leaving_guests_semaphore, INFINITE);
 							if(leaving_guests_wait_code != WAIT_OBJECT_0)
 								printf("Error while waiting leaving guests semaphore\n");
 							leaving_guests_wait_code = -1;
 						}
+						
+						/* כולם חוץ מהאחרון עושים ריליס, כדי שהסמפור יישאר על 0 ביום חדש*/
+						// num_of_guests - guests_should_leave - guests_currently_in_rooms
+						/* release leaving_guests_semaphore(with leaving guests)  */
+						/* mutex up */
 					}
 					else {
 						/* check waitcodes*/
@@ -260,7 +272,7 @@ WriteToRoomLogOut(char *guest_name, char *room_name, FILE *fp, int leave_day) {
 	fclose(fp);
 }
 
-void GuestEnterRoom(thread_param_struct *thread_param, int *start_day, int start_days[], int index) {
+void GuestEnterRoom(thread_param_struct *thread_param, int *start_day, int index) {
 
 	FILE *roomlog_fp;
 	int log_file_error_code = 0;
@@ -291,7 +303,7 @@ void GuestEnterRoom(thread_param_struct *thread_param, int *start_day, int start
 	
 }
 
-void UpdateCounter_GotoBarrier(thread_param_struct *thread_param, HANDLE curr_handle, int* guests_should_leave, int start_days[]) {
+void UpdateCounter_GotoBarrier(thread_param_struct *thread_param, HANDLE curr_handle, int* guests_should_leave) {
 	int barrier_return_value = 0;
 	int i = 0, j = 0;
 	HANDLE l_handle;
@@ -368,7 +380,9 @@ int CheckLeaveRoom(thread_param_struct *thread_param, FILE *roomlog_fp, int* gue
 			leave = 1;
 			*(thread_param->num_of_guests) = *(thread_param->num_of_guests) - 1;
 			/* update global start day to -1 means left*/
-			*thread_param->start_days[thread_param->index] = -1;
+
+			//*thread_param->start_days[thread_param->index] = -1;
+			start_days[thread_param->index] = -1;
 			printf("Guest %s has to leave room: %s\n", thread_param->guest->name, thread_param->guest->suitable_room);
 			/* Release leaving guests semaphore*/
 			l_handle = CreateSemaphore(NULL, 0, MAX_NUMBER_OF_GUESTS, "leaving_guests_semaphore");
