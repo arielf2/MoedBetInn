@@ -216,7 +216,7 @@ int guest_function(thread_param_struct* thread_param) {
 						check_leaving_waitcode = WaitForSingleObject(check_leaving_mutex, INFINITE);
 						/*mutex down */
 						guests_waiting_for_rooms = guests_waiting_for_rooms + 1;   /* THIS VARIABLE NEEDS TO BE DECREMENTED SOMEWHERE, NOT SURE WHERE*/
-						int waiting_threshold = thread_param->num_of_guests - guests_should_leave - guests_currently_in_rooms;
+						int waiting_threshold = *(thread_param->num_of_guests) - guests_should_leave - guests_currently_in_rooms;
 
 						if (check_leaving_waitcode == WAIT_OBJECT_0) {
 							for (int m = 0; m < guests_should_leave; m++) {

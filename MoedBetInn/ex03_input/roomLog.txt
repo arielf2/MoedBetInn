@@ -20,3 +20,11 @@ bigroom Hector IN 1
 OLDROOM Luther IN 1
 OLDROOM Reuven IN 1
 RoomA Shauli IN 1
+RoomA Shauli IN 1
+OLDROOM Reuven IN 1
+bigroom Hector IN 1
+OLDROOM Luther IN 1
+OLDROOM Reuven IN 1
+bigroom Hector IN 1
+OLDROOM Luther IN 1
+RoomA Shauli IN 1
