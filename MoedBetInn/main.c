@@ -13,14 +13,17 @@ HANDLE barrier_semaphore = NULL;
 HANDLE second_door_semaphore = NULL;
 HANDLE log_file_mutex = NULL;
 HANDLE count_mutex = NULL;
+HANDLE check_leaving_mutex = NULL;
 int start_days[MAX_NUMBER_OF_GUESTS];
 int guests_currently_in_rooms = 0;
+int guests_waiting_for_rooms = 0;
 
 int main(int argc, char *argv[]) {
 
 	char delim = " ";
 	count_mutex = CreateMutex(NULL, FALSE, NULL);
 	log_file_mutex = CreateMutex(NULL, FALSE, NULL);
+	check_leaving_mutex = CreateMutex(NULL, FALSE, NULL);
 	barrier_semaphore = CreateSemaphore(NULL, 0, MAX_NUMBER_OF_GUESTS, NULL);
 	
 	HANDLE guest_thread_handles[MAX_NUMBER_OF_GUESTS];

@@ -6,8 +6,10 @@ extern HANDLE barrier_semaphore;
 extern HANDLE second_door_semaphore;
 extern HANDLE log_file_mutex;
 extern HANDLE count_mutex;
+extern HANDLE check_leaving_mutex;
 extern int start_days[MAX_NUMBER_OF_GUESTS];
 extern int guests_currently_in_rooms;
+extern int guests_waiting_for_rooms;
 //int CreateThreadsForGuests(guest *guests_array[]) {
 //
 //}
@@ -107,6 +109,7 @@ int guest_function(thread_param_struct* thread_param) {
 	FILE *roomlog_fp;
 	int count_error_code = 0;
 	int second_door_waitcode = 0;
+	int check_leaving_waitcode = 0;
 	int log_file_error_code;
 	int guest_left = 0;
 	int leave = 0;
@@ -121,7 +124,7 @@ int guest_function(thread_param_struct* thread_param) {
 	guests_array[0] = *(thread_param->guests);
 
 	while (1) {
-		if (guest_left == 1)
+			if (guest_left == 1)
 			break;
 		//printf("Guest %s trying to enter room %s, checking room semaphore\n", thread_param->guest->name, thread_param->guest->suitable_room);
 
@@ -210,14 +213,27 @@ int guest_function(thread_param_struct* thread_param) {
 						/* wait for guests should leave semaphore*/
 						//l_handle = CreateSemaphore(NULL, 0, MAX_NUMBER_OF_GUESTS, "leaving_guests_semaphore");
 
+						check_leaving_waitcode = WaitForSingleObject(check_leaving_mutex, INFINITE);
 						/*mutex down */
-						for (int m = 0; m < guests_should_leave; m++) {
-							leaving_guests_wait_code = WaitForSingleObject(leaving_guests_semaphore, INFINITE);
-							if(leaving_guests_wait_code != WAIT_OBJECT_0)
-								printf("Error while waiting leaving guests semaphore\n");
-							leaving_guests_wait_code = -1;
+						guests_waiting_for_rooms = guests_waiting_for_rooms + 1;   /* THIS VARIABLE NEEDS TO BE DECREMENTED SOMEWHERE, NOT SURE WHERE*/
+						int waiting_threshold = thread_param->num_of_guests - guests_should_leave - guests_currently_in_rooms;
+
+						if (check_leaving_waitcode == WAIT_OBJECT_0) {
+							for (int m = 0; m < guests_should_leave; m++) {
+								leaving_guests_wait_code = WaitForSingleObject(leaving_guests_semaphore, INFINITE);
+								if (leaving_guests_wait_code != WAIT_OBJECT_0)
+									printf("Error while waiting leaving guests semaphore\n");
+								leaving_guests_wait_code = -1;
+							}
+							if (guests_waiting_for_rooms != waiting_threshold) { // all the guests except the last waiting guest will release the semaphore
+								int release_code = ReleaseSemaphore(leaving_guests_semaphore, guests_should_leave, NULL);
+								if (release_code == 0)
+									printf("error releasing leaving guests semaphore with error code %d", GetLastError());
+							}
 						}
+						ReleaseMutex(check_leaving_mutex);
 						
+
 						/* כולם חוץ מהאחרון עושים ריליס, כדי שהסמפור יישאר על 0 ביום חדש*/
 						// num_of_guests - guests_should_leave - guests_currently_in_rooms
 						/* release leaving_guests_semaphore(with leaving guests)  */
