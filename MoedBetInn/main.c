@@ -10,14 +10,17 @@
 #include "Semaphores.h"
 
 HANDLE barrier_semaphore = NULL;
-
+HANDLE second_door_semaphore = NULL;
+HANDLE log_file_mutex = NULL;
+HANDLE count_mutex = NULL;
 int main(int argc, char *argv[]) {
 
 	char delim = " ";
-	HANDLE countMutex = CreateMutex(NULL, FALSE, "countMutex");
-	HANDLE logFileMutex = CreateMutex(NULL, FALSE, "logFileMutex");
+	count_mutex = CreateMutex(NULL, FALSE, NULL);
+	log_file_mutex = CreateMutex(NULL, FALSE, NULL);
 	barrier_semaphore = CreateSemaphore(NULL, 0, MAX_NUMBER_OF_GUESTS, NULL);
-	
+	second_door_semaphore = CreateSemaphore(NULL, 1, MAX_NUMBER_OF_GUESTS, NULL);
+		
 	HANDLE guest_thread_handles[MAX_NUMBER_OF_GUESTS];
 	int guest_thread_ids[MAX_NUMBER_OF_GUESTS];
 
