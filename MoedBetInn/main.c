@@ -19,9 +19,9 @@ int main(int argc, char *argv[]) {
 	count_mutex = CreateMutex(NULL, FALSE, NULL);
 	log_file_mutex = CreateMutex(NULL, FALSE, NULL);
 	barrier_semaphore = CreateSemaphore(NULL, 0, MAX_NUMBER_OF_GUESTS, NULL);
-	second_door_semaphore = CreateSemaphore(NULL, 1, MAX_NUMBER_OF_GUESTS, NULL);
-		
+	
 	HANDLE guest_thread_handles[MAX_NUMBER_OF_GUESTS];
+	HANDLE personal_semaphors[MAX_NUMBER_OF_GUESTS];
 	int guest_thread_ids[MAX_NUMBER_OF_GUESTS];
 
 	HANDLE semaphoreHandles[MAX_ROOMS];
@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
 	int day_counter = 0;
 	int max_guests = 0;
 	int handles_exit_code;
-	int i;
+	int i, j;
 	//char path[] = argv[1] + rooms.txt
 	char *rooms_path = NULL;
 	char *names_path = NULL;
@@ -47,24 +47,25 @@ int main(int argc, char *argv[]) {
 	//Get rooms from input file (this will update rooms_array)
 	num_of_rooms = GetRoomsFromFile(rooms_path, rooms_array);
 	free(rooms_path); // the filename is no longer needed, free
-
 	//Get guests from input file (this will update guests_array)
 	num_of_guests = GetNamesFromFile(names_path, guests_array);
 	free(names_path); //the filename is no longer needed, free
 
 	CreateRoomSemaphores(semaphoreHandles, rooms_array, num_of_rooms); 
-
+	
 	int day = 1;
 	int counter = 0;
 	for (int i = 0; i < num_of_guests; i++) {  /* names_index will hold the actual number of guests*/
+		personal_semaphors[i] = CreateSemaphore(NULL, 0, 1, guests_array[i]);
 		/* find room for guest i*/
 		max_guests = FindRoom_UpdateGuest(guests_array[i], rooms_array, num_of_rooms);  /* room index holds the number of rooms (4 in this case) */
 		//*guests_array[i])
 		CreateThreadParams(thread_param_array, guests_array, i, &day, &counter, &num_of_guests, &max_guests);
 		///try
-		//thread_param_array[i]->barrier_handle = &barrierSemaphore;
-		guest_thread_handles[i] = NULL;
-
+		for (j = 0; j < num_of_guests; j++) {
+			strcpy((thread_param_array[i]->guests[j]), guests_array[j]);
+		}
+		thread_param_array[i]->index = i;
 		guest_thread_handles[i] = CreateThreadSimple(GuestThread, (thread_param_array[i]), &(guest_thread_ids[i]));
 		if (guest_thread_handles[i] == NULL)
 		{
