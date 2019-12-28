@@ -37,6 +37,7 @@ typedef struct _thread_param_struct
 	int *num_of_guests;
 	char guests[MAX_NUMBER_OF_GUESTS][ROOM_GUEST_NAME_LEN];
 	int* start_days[MAX_NUMBER_OF_GUESTS];
+	int num_of_nights[MAX_NUMBER_OF_GUESTS];
 	int index;
 	int *max_guests_in_suitable_room;
 } thread_param_struct;
@@ -76,7 +77,7 @@ void UpdateArrayNames(guest *names_array[], char name[], int nights, int index);
 	Description:
 	Parameters:
 	Returns:	*/
-int FindRoom_UpdateGuest(guest *guest_to_check, room *room_array[], int num_of_rooms);
+int FindRoom_UpdateGuest(guest *guest_to_check, room *room_array[], int num_of_rooms, int *num_of_nights[], int index);
 
 /*	Name: CreateThreadParams
 	Description:

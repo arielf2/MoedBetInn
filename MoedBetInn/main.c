@@ -23,7 +23,8 @@ int main(int argc, char *argv[]) {
 	HANDLE guest_thread_handles[MAX_NUMBER_OF_GUESTS];
 	HANDLE personal_semaphors[MAX_NUMBER_OF_GUESTS];
 	int guest_thread_ids[MAX_NUMBER_OF_GUESTS];
-
+	int num_of_nights[MAX_NUMBER_OF_GUESTS];
+	int start_days[MAX_NUMBER_OF_GUESTS];
 	HANDLE semaphoreHandles[MAX_ROOMS];
 	guest *guests_array[MAX_NUMBER_OF_GUESTS];
 	room *rooms_array[MAX_ROOMS];
@@ -58,7 +59,7 @@ int main(int argc, char *argv[]) {
 	for (int i = 0; i < num_of_guests; i++) {  /* names_index will hold the actual number of guests*/
 		personal_semaphors[i] = CreateSemaphore(NULL, 0, 1, guests_array[i]);
 		/* find room for guest i*/
-		max_guests = FindRoom_UpdateGuest(guests_array[i], rooms_array, num_of_rooms);  /* room index holds the number of rooms (4 in this case) */
+		max_guests = FindRoom_UpdateGuest(guests_array[i], rooms_array, num_of_rooms, num_of_nights, i);  /* room index holds the number of rooms (4 in this case) */
 		//*guests_array[i])
 		CreateThreadParams(thread_param_array, guests_array, i, &day, &counter, &num_of_guests, &max_guests);
 		///try
@@ -66,6 +67,9 @@ int main(int argc, char *argv[]) {
 			strcpy((thread_param_array[i]->guests[j]), guests_array[j]);
 		}
 		thread_param_array[i]->index = i;
+		*thread_param_array[i]->start_days = start_days;
+		*thread_param_array[i]->num_of_nights = num_of_nights;
+		start_days[i] = -1;
 		guest_thread_handles[i] = CreateThreadSimple(GuestThread, (thread_param_array[i]), &(guest_thread_ids[i]));
 		if (guest_thread_handles[i] == NULL)
 		{
@@ -168,7 +172,7 @@ void UpdateArrayNames(guest *names_array[], char name[], int nights, int index) 
 	names_array[index] = n_ptr;
 }
 
-int FindRoom_UpdateGuest(guest *guest_to_check, room *room_array[], int num_of_rooms) {
+int FindRoom_UpdateGuest(guest *guest_to_check, room *room_array[], int num_of_rooms, int *num_of_nights[], int index) {
 	int sum = guest_to_check->money;
 	int i = 0;
 	int max_guests_in_suitable_room = 0;
@@ -176,6 +180,7 @@ int FindRoom_UpdateGuest(guest *guest_to_check, room *room_array[], int num_of_r
 	for (i; i < num_of_rooms; i++) {
 		if (sum % (room_array[i]->price_for_night) == 0) {  /* 46 % 23 == 0 for example*/
 			guest_to_check->num_of_nights = (sum / room_array[i]->price_for_night);
+			num_of_nights[index] = (sum / room_array[i]->price_for_night);
 			strcpy_s(guest_to_check->suitable_room, ROOM_GUEST_NAME_LEN, room_array[i]->name);
 			max_guests_in_suitable_room = room_array[i]->max_guests;
 			break;
