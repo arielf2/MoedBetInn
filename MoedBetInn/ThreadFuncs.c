@@ -145,6 +145,7 @@ int guest_function(thread_param_struct* thread_param) {
 					if (barrier_wait_code == WAIT_OBJECT_0) {
 						/* check day and see if should leave room*/
 						if (CheckLeaveRoom(thread_param, &roomlog_fp, &guest_left, &start_day, &room_semaphore) == 1) {
+							guest_left = 1;
 							return 0;
 						}
 						//barrier_semaphore = NULL;
@@ -268,6 +269,7 @@ void GuestEnterRoom(thread_param_struct *thread_param, int *start_day) {
 
 void UpdateCounter_GotoBarrier(thread_param_struct *thread_param) {
 	int barrier_return_value = 0;
+	printf("Current day: %d, guest %d arriving\n", *thread_param->day, *thread_param->counter);
 	*(thread_param->counter) = *(thread_param->counter) + 1;
 	//*(thread_param->counter)++;
 	if (*(thread_param->counter) == *(thread_param->num_of_guests)) {
@@ -278,7 +280,7 @@ void UpdateCounter_GotoBarrier(thread_param_struct *thread_param) {
 		*(thread_param->counter) = 0;
 
 
-		printf("day passed to day %d", *(thread_param->day));
+		printf("day passed to day %d\n", *(thread_param->day));
 		barrier_return_value = ReleaseSemaphore(barrier_semaphore, *(thread_param->num_of_guests), NULL);
 		if (barrier_return_value == 0) {
 			printf("Error releasing barrier semaphore with error %d\n", GetLastError());
